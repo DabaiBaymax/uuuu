@@ -2,86 +2,254 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>支付页面</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>仙湖植物园购票</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
         body {
-            text-align: center;
-            padding: 20px;
-            font-family: "Microsoft YaHei", sans-serif;
-            background-color: #f5f5f5;
+            background: #f5f5f5;
+            min-height: 100vh;
         }
+
         .container {
-            margin-top: 50px;
-        }
-        input {
-            width: 80%;
-            padding: 12px;
-            margin: 20px 0;
-            font-size: 16px;
-            border: 1px solid #07c160;
-            border-radius: 8px;
-        }
-        button {
-            padding: 12px 24px;
-            background-color: #07c160;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        #countdown {
-            display: none; /* 初始隐藏 */
-            font-size: 20px;
-            color: #07c160;
-            margin-top: 30px;
-        }
-        .success {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            max-width: 414px;
+            margin: 0 auto;
             background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #07c160 0%, #05a84e 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .payment-box {
+            padding: 20px;
+        }
+
+        .amount-input {
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .currency-symbol {
+            font-size: 36px;
+            color: #333;
+            position: absolute;
+            left: 20%;
+            top: 16px;
+        }
+
+        #amount {
+            width: 60%;
+            height: 68px;
+            border: none;
+            border-bottom: 2px solid #07c160;
+            font-size: 48px;
+            text-align: center;
+            color: #333;
+            font-weight: 500;
+            padding-left: 40px;
+        }
+
+        input:focus {
+            outline: none;
+        }
+
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
+        .confirm-btn {
+            background: #07c160;
+            color: white;
+            width: 80%;
+            height: 56px;
+            border-radius: 28px;
+            font-size: 18px;
+            border: none;
+            margin: 40px auto;
+            display: block;
+            transition: all 0.3s;
+        }
+
+        .confirm-btn:active {
+            background: #05a84e;
+            transform: scale(0.98);
+        }
+
+        .loader {
+            display: none;
+            width: 50px;
+            height: 50px;
+            margin: 40px auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #07c160;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-box {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: #07c160;
+            border-radius: 50%;
+            margin: 40px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: zoomIn 0.5s;
+        }
+
+        .checkmark {
+            color: white;
+            font-size: 48px;
+            transform: rotate(0deg);
+            line-height: 1;
+        }
+
+        @keyframes zoomIn {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .countdown {
+            text-align: center;
+            font-size: 16px;
+            color: #666;
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <input type="number" id="amount" step="0.01" placeholder="请输入金额（例如 100.00）">
-        <button onclick="startPayment()">确定支付</button>
-        <div id="countdown">支付成功，<span id="timer">3</span>秒后关闭页面...</div>
-        <div class="success" id="success">
-            <h2>🎉 支付成功！</h2>
+        <div class="header">
+            <h1>欢迎来到深圳仙湖植物园</h1>
+            <div class="subtitle">请支付入园门票费用</div>
+        </div>
+        
+        <div class="payment-box">
+            <div class="amount-input">
+                <span class="currency-symbol">¥</span>
+                <input type="number" 
+                       id="amount" 
+                       placeholder="0.00" 
+                       step="0.01"
+                       inputmode="decimal"
+                       pattern="\d*"
+                       oninput="formatAmount(this)">
+            </div>
+            
+            <button class="confirm-btn" onclick="startPayment()">确定支付</button>
+            
+            <div class="loader" id="loader"></div>
+            
+            <div class="success-box" id="successBox">
+                <div class="success-icon">
+                    <div class="checkmark">✓</div>
+                </div>
+                <h2>支付成功！</h2>
+                <p>祝您游览愉快！</p >
+            </div>
+            
+            <div class="countdown" id="countdown">
+                页面将在 <span id="timer">5</span> 秒后关闭
+            </div>
         </div>
     </div>
 
     <script>
+        // 金额格式化
+        function formatAmount(input) {
+            let value = input.value.replace(/[^0-9.]/g, '');
+            
+            // 处理多个小数点
+            const decimalCount = value.split('.').length - 1;
+            if (decimalCount > 1) {
+                value = value.substring(0, value.lastIndexOf('.'));
+            }
+            
+            // 限制小数点后两位
+            const decimalIndex = value.indexOf('.');
+            if (decimalIndex !== -1) {
+                value = value.substring(0, decimalIndex + 3);
+            }
+            
+            input.value = value;
+        }
+
+        // 支付流程
         function startPayment() {
             const amount = document.getElementById('amount').value;
             
-            // 验证输入
-            if (!amount || isNaN(amount)) {
-                alert('请输入有效金额！');
+            // 输入验证
+            if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+                alert('请输入有效金额');
                 return;
             }
 
-            // 隐藏输入框和按钮，显示倒计时
-            document.getElementById('amount').style.display = 'none';
-            document.querySelector('button').style.display = 'none';
-            document.getElementById('countdown').style.display = 'block';
-            document.getElementById('success').style.display = 'block';
+            // 隐藏输入框和按钮
+            document.querySelector('.amount-input').style.display = 'none';
+            document.querySelector('.confirm-btn').style.display = 'none';
+            
+            // 显示加载动画
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
 
-            // 启动倒计时
-            let seconds = 3;
+            // 2.5秒后显示支付成功
+            setTimeout(() => {
+                loader.style.display = 'none';
+                document.getElementById('successBox').style.display = 'block';
+                document.getElementById('countdown').style.display = 'block';
+                startCountdown();
+            }, 2500);
+        }
+
+        // 倒计时逻辑
+        function startCountdown() {
+            let seconds = 5;
             const timerElement = document.getElementById('timer');
+            
             const countdown = setInterval(() => {
                 seconds--;
                 timerElement.textContent = seconds;
+                
                 if (seconds <= 0) {
                     clearInterval(countdown);
                     closePage();
@@ -89,17 +257,31 @@
             }, 1000);
         }
 
+        // 关闭页面
         function closePage() {
-            // 尝试关闭页面（微信环境）
             try {
                 if (typeof WeixinJSBridge !== 'undefined') {
                     WeixinJSBridge.invoke('closeWindow');
                 } else {
-                    window.close();
+                    window.history.back();
                 }
             } catch (e) {
-                alert('支付成功！请手动关闭页面。');
+                window.history.back();
             }
+        }
+
+        // 自动聚焦输入框
+        window.onload = function() {
+            document.getElementById('amount').focus();
+            document.getElementById('amount').addEventListener('blur', function() {
+                if (!this.value) {
+                    this.value = '0.00';
+                } else if (!this.value.includes('.')) {
+                    this.value += '.00';
+                } else if (this.value.split('.')[1].length === 1) {
+                    this.value += '0';
+                }
+            });
         }
     </script>
 </body>
