@@ -99,11 +99,123 @@
             transform: scale(0.98);
         }
 
+        .payment-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            z-index: 1000;
+        }
+
+        .payment-dialog {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-radius: 16px 16px 0 0;
+            padding: 20px;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .payment-title {
+            font-size: 18px;
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .payment-amount {
+            text-align: center;
+            font-size: 24px;
+            color: #333;
+            margin: 15px 0;
+            letter-spacing: 2px;
+        }
+
+        .payment-method {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .method-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .method-name {
+            font-size: 16px;
+        }
+
+        .method-balance {
+            color: #666;
+            letter-spacing: 2px;
+        }
+
+        .password-container {
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .password-input {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .password-cell {
+            width: 15%;
+            height: 45px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 20px;
+            line-height: 45px;
+            transition: all 0.3s;
+        }
+
+        .password-cell.active {
+            border-color: #07c160;
+        }
+
+        .password-cell.error {
+            border-color: #f5222d;
+            animation: shake 0.4s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        .error-tip {
+            color: #f5222d;
+            font-size: 12px;
+            text-align: center;
+            height: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .error-tip.show {
+            opacity: 1;
+        }
+
         .loader {
             display: none;
             width: 50px;
             height: 50px;
-            margin: 40px auto;
+            margin: 20px auto;
             border: 4px solid #f3f3f3;
             border-top: 4px solid #07c160;
             border-radius: 50%;
@@ -127,26 +239,31 @@
             background: #07c160;
             border-radius: 50%;
             margin: 40px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: relative;
             animation: zoomIn 0.5s;
         }
 
         .checkmark {
-            color: white;
-            font-size: 48px;
-            transform: rotate(0deg);
-            line-height: 1;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -60%) rotate(45deg);
+            height: 40px;
+            width: 20px;
+            border-bottom: 4px solid white;
+            border-right: 4px solid white;
+            animation: checkmarkScale 0.3s ease-out;
+        }
+
+        @keyframes checkmarkScale {
+            0% { transform: translate(-50%, -60%) rotate(45deg) scale(0); }
+            80% { transform: translate(-50%, -60%) rotate(45deg) scale(1.2); }
+            100% { transform: translate(-50%, -60%) rotate(45deg) scale(1); }
         }
 
         @keyframes zoomIn {
-            from {
-                transform: scale(0);
-            }
-            to {
-                transform: scale(1);
-            }
+            from { transform: scale(0); }
+            to { transform: scale(1); }
         }
 
         .countdown {
@@ -176,13 +293,11 @@
                        oninput="formatAmount(this)">
             </div>
             
-            <button class="confirm-btn" onclick="startPayment()">确定支付</button>
-            
-            <div class="loader" id="loader"></div>
+            <button class="confirm-btn" onclick="showPaymentDialog()">确定支付</button>
             
             <div class="success-box" id="successBox">
                 <div class="success-icon">
-                    <div class="checkmark">✓</div>
+                    <div class="checkmark"></div>
                 </div>
                 <h2>支付成功！</h2>
                 <p>祝您游览愉快！</p >
@@ -194,7 +309,51 @@
         </div>
     </div>
 
+    <!-- 支付弹窗 -->
+    <div class="payment-mask" id="paymentMask">
+        <div class="payment-dialog">
+            <div class="payment-title">选择支付方式</div>
+            <div class="payment-amount" id="paymentAmount"></div>
+            <div class="payment-method">
+                <div class="method-item">
+                    <span class="method-name">零钱</span>
+                    <span class="method-balance">¥ ***.**</span>
+                </div>
+                <div class="method-item">
+                    <span class="method-name">零钱通</span>
+                    <span class="method-balance">¥ ***.**</span>
+                </div>
+            </div>
+            <div class="password-container">
+                <div class="password-input" id="passwordInput">
+                    <div class="password-cell"></div>
+                    <div class="password-cell"></div>
+                    <div class="password-cell"></div>
+                    <div class="password-cell"></div>
+                    <div class="password-cell"></div>
+                    <div class="password-cell"></div>
+                </div>
+                <div class="error-tip" id="errorTip">密码错误，请重新输入</div>
+                <div class="loader" id="dialogLoader"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // 密码验证相关变量
+        const CORRECT_PASSWORD = '123456';
+        let currentAmount = 0;
+        let inputValue = [];
+        const passwordCells = document.querySelectorAll('.password-cell');
+        const virtualInput = document.createElement('input');
+        
+        // 创建虚拟输入框
+        virtualInput.type = 'tel';
+        virtualInput.maxLength = 6;
+        virtualInput.style.position = 'absolute';
+        virtualInput.style.opacity = 0;
+        document.body.appendChild(virtualInput);
+
         // 金额格式化
         function formatAmount(input) {
             let value = input.value.replace(/[^0-9.]/g, '');
@@ -214,31 +373,83 @@
             input.value = value;
         }
 
-        // 支付流程
-        function startPayment() {
+        // 显示支付弹窗
+        function showPaymentDialog() {
             const amount = document.getElementById('amount').value;
             
-            // 输入验证
             if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
                 alert('请输入有效金额');
                 return;
             }
 
-            // 隐藏输入框和按钮
-            document.querySelector('.amount-input').style.display = 'none';
-            document.querySelector('.confirm-btn').style.display = 'none';
+            currentAmount = parseFloat(amount).toFixed(2);
+            document.getElementById('paymentAmount').textContent = `¥ ${currentAmount}`;
             
-            // 显示加载动画
-            const loader = document.getElementById('loader');
-            loader.style.display = 'block';
+            // 显示支付弹窗
+            document.getElementById('paymentMask').style.display = 'block';
+            virtualInput.focus();
+        }
 
-            // 2.5秒后显示支付成功
+        // 密码输入监听
+        virtualInput.addEventListener('input', (e) => {
+            const value = e.target.value.replace(/\D/g, '');
+            inputValue = value.split('');
+            
+            passwordCells.forEach((cell, index) => {
+                cell.textContent = inputValue[index] ? '•' : '';
+                cell.classList.toggle('active', index === inputValue.length);
+            });
+
+            if (value.length === 6) {
+                if (value === CORRECT_PASSWORD) {
+                    handleCorrectPassword();
+                } else {
+                    handleWrongPassword();
+                }
+            }
+        });
+
+        // 处理正确密码
+        function handleCorrectPassword() {
+            document.getElementById('errorTip').classList.remove('show');
+            document.getElementById('dialogLoader').style.display = 'block';
+            
             setTimeout(() => {
-                loader.style.display = 'none';
+                document.getElementById('paymentMask').style.display = 'none';
+                document.querySelector('.amount-input').style.display = 'none';
+                document.querySelector('.confirm-btn').style.display = 'none';
                 document.getElementById('successBox').style.display = 'block';
                 document.getElementById('countdown').style.display = 'block';
                 startCountdown();
+                resetPasswordInput();
             }, 2500);
+        }
+
+        // 处理错误密码
+        function handleWrongPassword() {
+            passwordCells.forEach(cell => cell.classList.add('error'));
+            document.getElementById('errorTip').classList.add('show');
+            
+            setTimeout(() => {
+                passwordCells.forEach(cell => {
+                    cell.classList.remove('error', 'active');
+                    cell.textContent = '';
+                });
+                virtualInput.value = '';
+                inputValue = [];
+                document.getElementById('errorTip').classList.remove('show');
+            }, 1000);
+        }
+
+        // 重置密码输入
+        function resetPasswordInput() {
+            virtualInput.value = '';
+            inputValue = [];
+            passwordCells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('active');
+            });
+            document.getElementById('dialogLoader').style.display = 'none';
         }
 
         // 倒计时逻辑
